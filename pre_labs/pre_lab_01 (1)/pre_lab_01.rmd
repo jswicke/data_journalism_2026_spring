@@ -37,7 +37,7 @@ The library function loads an R library such as the tidyverse, providing access 
 
 ### Task 1: The console
 
-**Task** In the console (look below), type 2+2 and hit enter. What does it return? Type your answer below. **Answer: 4**
+**Task** In the console (look below), type 2+2 and hit enter. What does it return? Type your answer below. **4**
 
 ### Task 2: Variables
 
@@ -200,9 +200,14 @@ Now let's say we wanted to know the total attendance for each denomination? For 
 megachurches |>
   group_by(denomination) |>
   summarise(
-    total_size = sum(size)
+    total_size = sum(size),
+    mean_size = mean(size),
+    median_size = median(size)
   ) |>
   arrange(desc(total_size))
+
+megachurches 
+
 ```
 
 Compared to the previous codeblock, what has changed and how did that affect the result? What do the top terms have in common? **The sum command was used, which now uses all the church size data from a denomination. The top terms are either protestants or don't follow a specific denomination**
@@ -220,8 +225,8 @@ megachurches |>
     total_size = sum(size),
     mean_size = mean(size),
     median_size = median(size),
-    # min here
-    # max here
+    min_size = min(size)
+    max_size = max(size)
   ) |>
   arrange(desc(total_size))
 ```
