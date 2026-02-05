@@ -1,0 +1,91 @@
+---
+title: "lab_01"
+author: "Derek Willis"
+date: "2025-01-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Turn off scientific notation
+options(scipen=999)
+```
+
+## About this lab
+
+To complete this lab, you need to: \* run existing code as directed (look for **Task**). \* modify existing code as directed (look for **Task**). \* write code in empty codeblocks provided to answer questions included (look for **Q**). \* write out the answer in the form of a complete sentence in the space given (look for **A**). When you are finished, commit changes and push to your personal GitHub repo, then submit the URL to this document on ELMS.
+
+Remember to add any new verbs or concepts to your class reference notebook!
+
+## Load libraries and establish settings
+
+**Task** Run the codeblock below to load the Tidyverse. To run the codeblock, hit the little green play button in the upper right corner of the gray area (the codeblock) below.
+
+```{r}
+# Load the tidyverse. If you have not installed the tidyverse already, remove the # from the next line and run it first.  
+# install.packages('tidyverse')
+library(tidyverse)
+```
+
+## Load Data
+
+We're going to load the Maryland churches data and the megachurches data.
+
+**Task** Run the codeblock below to load the data, which is contained in CSV files.
+
+```{r}
+md_churches <- read_csv("churches_md.csv")
+megachurches <- read_csv("megachurches.csv")
+```
+
+## Answer questions
+
+**Q1** Which NTEE classification code (the NTEE_CD column) has the most churches in Maryland? Show the classification codes (you can find out what they mean here: https://www.irs.gov/pub/irs-soi/eo-info.pdf) with the highest count first. Is this result useful? Why or why not? **A1** X20 has the most churches is Maryland. The IRS classfies this as a Christian, religious-based orgnization. The result is honestly not that useful because we're already under the assumption that most, if not all of the churches on the list are Christian. 
+
+```{r}
+
+md_churches |>
+  group_by(NTEE_CD) |>
+  summarise(
+    count = n()
+  ) |>
+  arrange(desc(count))
+
+```
+
+**Q2** Find out which denomination has the greatest average (mean) size for its megachurches. Your code must show the denomination with the greatest average size first. **A2** Evangelical Covenants have the greatest mean size for its megachurches
+
+```{r}
+
+megachurches |>
+  group_by(denomination) |>
+  summarise(
+    mean_size = mean(size),
+  ) |>
+  arrange(desc(mean_size))
+
+
+```
+
+**Q3** Count the number of megachurches for each state and city combination. Which state/city combination has the most megachurches? Which city is the most surprising, and why? **A3** Houston has the most megachurches, with 37. I was shocked to see Chicago in the top 5. I always associaterd megachurches with the South, so seeing Illinois right in the middle of North Carolina and Georgia stood out to me. (I also found it funny that Las Vegas was in the top 30, given its nickname is Sin City... )
+
+```{r}
+
+megachurches |>
+  group_by(city, state) |>
+  summarise(
+    count = n()
+  ) |>
+  arrange(desc(count))
+
+```
+
+**Q4** Given the results for Q3, what's a story that you could tell with this information? Think broadly, and consider what additional information you might need to make your story stronger. You also should think about what cities and states aren't in the results. **A4** I'm curious about Chicago megachurches because I was poking around and found an Axios story from 2024 that found that only half of Chicago adults say they regularly attend church. Illinois is one of the states with the lowest church attendees. My question is: who is going to these megachurches?
+
+**Q5** Take one of the questions you listed in the final question of the pre_lab and try to answer it here in code. If you don't know how to fully answer it, write what code you can and describe in words what else you would need to do. If you got an answer, is it interesting? **A5** I decided to answer "Are any of the largest megachurches in Maryland?" The answer is...kinda? The 51st largest megachurch, First Baptist Church of Glenarden, is in Landover. That's followed by the Church of the Redeemer in Gaithersburg, the 78th largest, and the Mount Pleasant Church and Ministries in Baltimore, the 124th largest. 
+
+```{r}
+megachurches |>
+  group_by(size) |>
+  arrange(desc(size))
+```
