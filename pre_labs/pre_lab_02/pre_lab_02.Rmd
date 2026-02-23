@@ -136,7 +136,7 @@ Sometimes you need to find rows that contain a certain pattern rather than an ex
 **Task** Run the following code
 
 ```{r}
-md_churches |>
+orthodox_churches <- md_churches |>
   filter(str_detect(NAME, "BAPTIST"))
 ```
 
