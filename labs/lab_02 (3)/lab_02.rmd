@@ -73,17 +73,43 @@ pc_expenditures |>
 
 ```
 
-**Q4.** Using the same Maryland campaign expenses data, change the datatype of the `Transaction Date` column so that it is a date and not a chr, saving the result as the same dataframe. Then create a new column for the week based on `Transaction Date` using the `week()` function (representing the week of the year). Then write code that shows the total amount spent each week using that new column. Write a sentence describing the pattern of spending over time - when has there been more spending and when has there been less? **A4.**
+**Q4.** Using the same Maryland campaign expenses data, change the datatype of the `Transaction Date` column so that it is a date and not a chr, saving the result as the same dataframe. Then create a new column for the week based on `Transaction Date` using the `week()` function (representing the week of the year). Then write code that shows the total amount spent each week using that new column. Write a sentence describing the pattern of spending over time - when has there been more spending and when has there been less? **Generally, the most consistent high spending comes towards the end of the year, but there are a few spikes of high spending towards the beginning.**
 
 ```{r}
 
-md_expenditures <- md_expenditures |> mutate(`Transaction Date`=mdy(`Transaction Date`))
-
+md_expenditures <- md_expenditures |> 
+  mutate(`Transaction Date`=mdy(`Transaction Date`)) |>
+  mutate (week = week(`Transaction Date`)) |>
+  group_by(week) |>
+  summarize (total = sum(`Transaction Amount`)) |>
+  arrange(desc(total))
 ```
 
 **Q5.** Using the `md_churches` data, create a column using `mutate()` and `case_when()` that tries to accomplish the same thing we did in the pre_lab - pulling the denomination or faith from church names. This will take longer than the pre_lab because there are more churches in the data, and you should use <https://www.thearda.com/us-religion/census/congregational-membership?y=2020&y2=0&t=1&c=24> as a reference for the most common denominations in Maryland. What you want is to populate your new column with something like the "Family" column on that web page, using "Other" for those you're not able to classify. After creating your new column, write code that shows the top five denominations or faiths by number of churches in Maryland. You won't get all of them, but try to get as many as you can. Do these totals seem accurate to you? Are there denominations or faith groups that are obviously missing? Which one(s)?
 
-**A5**
+**I don't see any Mormons on the list, nor does it look like there's any evangelical churches (or megachurches in this case).**
 
 ```{r}
+md_churches |> 
+  mutate(denomination = case_when(
+    str_detect(NAME, "BAPTIST") ~ "Baptist",
+    str_detect(NAME, "CATHOLIC") ~ "Catholic",
+    str_detect(NAME, "METHODIST") ~ "Methodist",
+    str_detect(NAME, "LUTHERAN") ~ "Lutheran",
+    str_detect(NAME, "PRESBYT") ~ "Presbyterian",
+    str_detect(NAME, "EPISCOPAL") ~ "Episcopal",
+    str_detect(NAME, "ORTHODOX") ~ "Orthodox",
+    str_detect(NAME, "SYNAGOGUE") ~ "Jewish",
+    str_detect(NAME, "UNITARIAN") ~ "Unitarian",
+    str_detect(NAME, "PENTECOST") ~ "Pentecostal",
+    str_detect(NAME, "ADVENTIST") ~ "Seventh-day Adventist",
+    str_detect(NAME, "QUAKER") ~ "Quaker",
+    str_detect(NAME, "ISLAMIC|MOSQUE|MUSLIM") ~ "Islamic",
+    str_detect(NAME, "SCIENTIST") ~ "Christian Science",
+    TRUE ~ "Other"
+  )) |>
+  group_by(denomination) |>
+  summarise(count = n()) |>
+  arrange(desc(count))
+```
 ```
