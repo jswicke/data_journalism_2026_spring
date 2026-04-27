@@ -1,0 +1,57 @@
+Version: 1.0
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: pdfLaTeX
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(refinr)
+```
+***data cleaning***
+```{r}
+clergy_contribs_2016 <- read_csv("clergy_contribs_2016.csv")
+clergy_contribs_2018 <- read_csv("clergy_contribs_2018.csv")
+clergy_contribs_2020 <- read_csv("clergy_contribs_2020.csv")
+clergy_contribs_2022 <- read_csv("clergy_contribs_2022.csv")
+clergy_contribs_2024 <- read_csv("clergy_contribs_2024.csv")
+clergy_contribs_combined_clean <- read_csv("clergy_contribs_combined_clean.csv")
+md_contribs <- read_csv("md_contribs.csv.zip")
+
+
+clergy_contribs_combined <- bind_rows(list(clergy_contribs_2016, clergy_contribs_2018, clergy_contribs_2020, clergy_contribs_2022, clergy_contribs_2024))
+
+write.csv(clergy_contribs_combined, "clergy_contribs_combined.csv", row.names = FALSE)
+
+clergy_totals_by_cycle <- clergy_contribs_combined_clean |>
+  group_by(contributor_name, two_year_transaction_period, committee_name) |>
+  summarize(
+    total_amount = sum(contribution_receipt_amount),
+    num_contributions = n(),
+  )
+
+clergy_wide <- clergy_totals_by_cycle |>
+  select(contributor_name, two_year_transaction_period, total_amount, committee_name) |>
+  pivot_wider(
+    names_from = two_year_transaction_period,
+    values_from = total_amount,
+    values_fill = 0
+  )
+  
+```
+
+***Initial analysis:***
+
+***This dataset has around 42,000 objects with 15 variables (14 excluding the cleaned data row). Right now, the clear and obvious flaw is the inconsistency with the zip codes. Some are 5 digits while others are 9. For my sake, I'd like them all to be consistent. I know there's a way to do this, but I have to look back to see how. Another rather annoying limitation is that it doesn't show what political party the contribution is for. Since I'm doing an analysis of Democrat/Republican donors, it will be very tedious to have to individually check what each PAC represents. Some will be easy, some will take some research. Some of my questions will also need slight reframing. Obviously, this dataset does not include the exact reason each clergy contributed, so asking why top donors contributed will likely have to be changed to a comparison of top donors throughout election cycles. My question about Sherrod Brown will likely have to be reframed similarly, with me looking at contributions to his PAC over past election cycles, and maybe comparing it to other out-of-state committees. Other than that, I don't anticipate having any trouble answering my questions, and I believe that the data encompasses everything I'm looking for.***
+```{r}
+
+```
