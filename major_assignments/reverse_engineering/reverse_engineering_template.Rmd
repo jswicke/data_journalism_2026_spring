@@ -27,20 +27,102 @@ Loading required libraries for this analysis.
 ```{r echo=FALSE, message=FALSE}
 library(tidyverse)
 library(lubridate)
+library(refinr)
 ```
 
 ## Load and Cleaning Data
 
 In this section, describe the source of the data, write a basic data dictionary for data you are working with, and discuss any caveats or issues you discovered working with this data. 
 
+This data is collected from the 2023-2024 Religious Landscape Study, which Pew Research conducted. My basic dictionary can be found below. The main data points I will be using are highest degree (EDUCREC), attendance in person (ATTNDPERRLS), attendance online (ATTNDONRLS), decade of birth (BIRTHDECADE), and totaly family income (INC_SDT1).
+
+There are two main caveats I see with this data. For one, the average weight for is around 7,000, which means that one person's answer accounts for 7,000 people. However, it's clear some outliers exist, as the median weight is around 4,000. Still, this is something to keep in mind, as the polling seems to be heavily skewed towards one demographic. There is also no distinction as to what counts as "very old" in the dataset, as that is something the author decided for himself. With no guideline, I will consider anyone born before 1960 as "very old," and will adjust accordingly if I my findings are off. 
+
 ```{r}
 # Load required data
 
 # Path to data should be loaded from folder "data" i.e. read_csv("data/name_of_data.csv")
 
+RLS <- read_csv("data/RLS.csv")
+
 # Clean required data and prepare for analysis if needed. 
 
+RLS <- RLS |>
+  mutate(
+    highest_degree = case_when(
+      EDUCREC == 1 ~ "High school or less",
+      EDUCREC == 2 ~ "Some college/Associate's degree",
+      EDUCREC == 3 ~ "College Graduate",
+      EDUCREC == 4 ~ "Master's degree or higher",
+      EDUCREC == 99 ~ "No Answer"
+    )
+  )
 
+RLS <- RLS |>
+  mutate(
+    attendance_in_person = case_when(
+      ATTNDPERRLS == 1 ~ "More than once a week",
+      ATTNDPERRLS == 2 ~ "Once a week",
+      ATTNDPERRLS == 3 ~ "Once or twice a month",
+      ATTNDPERRLS == 4 ~ "A few times a year",
+      ATTNDPERRLS == 5 ~ "Seldom",
+      ATTNDPERRLS == 6 ~ "Never",
+      ATTNDPERRLS == 99 ~ "Don't know/Refused"
+    )
+  )
+
+RLS <- RLS |> 
+  mutate (
+    attendance_online = case_when(
+      ATTNDONRLS == 1 ~ "More than once a week",
+      ATTNDONRLS == 2 ~ "Once a week",
+      ATTNDONRLS == 3 ~ "Once or twice a month",
+      ATTNDONRLS == 4 ~ "A few times a year",
+      ATTNDONRLS == 5 ~ "Seldom",
+      ATTNDONRLS == 6 ~ "Never",
+      ATTNDONRLS == 99 ~ "Don't know/Refused"
+    )
+  )
+
+RLS <- RLS |>
+  mutate(
+    birth_decade = case_when(
+      BIRTHDECADE == 1 ~ "1940s or earlier",
+      BIRTHDECADE == 2 ~ "1950s",
+      BIRTHDECADE == 3 ~ "1960s",
+      BIRTHDECADE == 4 ~ "1970s",
+      BIRTHDECADE == 5 ~ "1980s",
+      BIRTHDECADE == 6 ~ "1990s",
+      BIRTHDECADE == 7 ~ "2000s",
+      BIRTHDECADE == 99 ~ "No answer"
+    )
+  )
+
+RLS <- RLS |>
+  mutate(
+    total_family_income = case_when(
+      INC_SDT1 == 1 ~ "Less than $30,000",
+      INC_SDT1 == 2 ~ "$30,000 to less than $40,000",
+      INC_SDT1 == 3 ~ "$40,000 to less than $50,000",
+      INC_SDT1 == 4 ~ "$50,000 to less than $75,000",
+      INC_SDT1 == 5 ~ "$75,000 to less than $100,000",
+      INC_SDT1 == 6 ~ "$100,000 to less than $125,000",
+      INC_SDT1 == 7 ~ "$125,000 to less than $150,000",
+      INC_SDT1 == 8 ~ "$150,000 or more",
+      INC_SDT1 == 99 ~ "Don't know/Refused"
+    )
+  )
+
+RLS_curated <- RLS |>
+  select(P_SUID, WEIGHT, highest_degree, attendance_in_person, attendance_online, birth_decade, total_family_income)
+
+RLS_curated |>
+  summarise(
+    min_weight = min(WEIGHT),
+    median_weight = median(WEIGHT),
+    mean_weight = mean(WEIGHT),
+    max_weight = max(WEIGHT)
+  )
 ```
 
 ## Sentences to Engineer
