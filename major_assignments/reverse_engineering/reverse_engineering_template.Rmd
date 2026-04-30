@@ -36,14 +36,14 @@ In this section, describe the source of the data, write a basic data dictionary 
 
 This data is collected from the 2023-2024 Religious Landscape Study, which Pew Research conducted. My basic dictionary can be found below. The main data points I will be using are highest degree (EDUCREC), attendance in person (ATTNDPERRLS), attendance online (ATTNDONRLS), decade of birth (BIRTHDECADE), and totaly family income (INC_SDT1).
 
-There are two main caveats I see with this data. For one, the average weight for is around 7,000, which means that one person's answer accounts for 7,000 people. However, it's clear some outliers exist, as the median weight is around 4,000. Still, this is something to keep in mind, as the polling seems to be heavily skewed towards one demographic. There is also no distinction as to what counts as "very old" in the dataset, as that is something the author decided for himself. With no guideline, I will consider anyone born before 1960 as "very old," and will adjust accordingly if I my findings are off. 
+There are three main caveats I see with this data. For one, the average weight for is around 7,000, which means that one person's answer accounts for 7,000 people. However, it's clear some outliers exist, as the median weight is around 4,000. Still, this is something to keep in mind, as the polling seems to be heavily skewed towards one demographic. There is also no distinction as to what counts as "very old" in the dataset, as that is something the author decided for himself. With no guideline, I will consider anyone born before 1960 as "very old," and will adjust accordingly if I my findings are off. Finally, there is not exact birth years and only decades. This makes aggregating data based on age incredibly difficult, especially when one of my questions
 
 ```{r}
 # Load required data
 
 # Path to data should be loaded from folder "data" i.e. read_csv("data/name_of_data.csv")
 
-RLS <- read_csv("data/RLS.csv")
+RLS <- read_csv("data/RLS.csv.zip")
 
 # Clean required data and prepare for analysis if needed. 
 
@@ -84,17 +84,17 @@ RLS <- RLS |>
     )
   )
 
-RLS <- RLS |>
-  mutate(
-    birth_decade = case_when(
-      BIRTHDECADE == 1 ~ "1940s or earlier",
-      BIRTHDECADE == 2 ~ "1950s",
-      BIRTHDECADE == 3 ~ "1960s",
-      BIRTHDECADE == 4 ~ "1970s",
-      BIRTHDECADE == 5 ~ "1980s",
-      BIRTHDECADE == 6 ~ "1990s",
-      BIRTHDECADE == 7 ~ "2000s",
-      BIRTHDECADE == 99 ~ "No answer"
+###RLS <- RLS |>
+  ###mutate(
+    ###birth_decade = case_when(
+      ###BIRTHDECADE == 1 ~ "1940s or earlier",
+      ###BIRTHDECADE == 2 ~ "1950s",
+     ###BIRTHDECADE == 3 ~ "1960s",
+      ###BIRTHDECADE == 4 ~ "1970s",
+      ###BIRTHDECADE == 5 ~ "1980s",
+      ###BIRTHDECADE == 6 ~ "1990s",
+      ###BIRTHDECADE == 7 ~ "2000s",
+      ###BIRTHDECADE == 99 ~ "No answer"
     )
   )
 
@@ -130,23 +130,34 @@ In this notebook, we are reverse engineering five sentences from the story.
 
 ### Sentence 1
 
-* **Sentence text**: [Paste in sentence to engineer here]
+* **Sentence text**: ["Among very old Americans, the ones who are least likely to go to church are those who stopped at high school."]
 * **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
 
 ```{r}
 # Put code to reverse engineer sentence here
-
+RLS_curated |>
+  filter(!is.na(highest_degree)) |>
+  group_by(highest_degree) |>
+  summarise(
+    n = n(),
+    unweighted_mean_degree = round(mean(n, na.rm = TRUE), 1),
+    weighted_mean_degree = round(weighted.mean(n, WEIGHT, na.rm = TRUE), 1),
+    .groups = "drop"
+  ) |>
+  arrange(desc(weighted_mean_age))
 # Display results of code below this codeblock
 
 ```
 
 ### Sentence 2
 
-* **Sentence text**: [Paste in sentence to engineer here]
+* **Sentence text**: ["I will write this until I’m blue in the face: education is positively related to religious attendance in the United States."]
 * **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
 
 ```{r}
 # Put code to reverse engineer sentence here
+
+
 
 # Display results of code below this codeblock
 

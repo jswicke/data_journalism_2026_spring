@@ -42,3 +42,5 @@ vignettes/*.pdf
 .DS_Store
 *.DS_Store
 .positai
+
+major_assignments/reverse_engineering/data/RLS.csv.zip

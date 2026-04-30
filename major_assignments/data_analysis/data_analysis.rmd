@@ -121,8 +121,8 @@ clergy_contribs_combined_clean |>
 ***Answer 5:***
 
 ```{r}
-committee_parties <- clergy_long |>
-  group_by(committee_name, election_cycle, total_contributions) |>
+committee_parties <- clergy_wide |>
+  group_by(committee_name) |>
     summarize(
       count = n()
     ) |>
