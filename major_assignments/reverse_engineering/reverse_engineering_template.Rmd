@@ -47,42 +47,42 @@ RLS <- read_csv("data/RLS.csv.zip")
 
 # Clean required data and prepare for analysis if needed. 
 
-RLS <- RLS |>
-  mutate(
-    highest_degree = case_when(
-      EDUCREC == 1 ~ "High school or less",
-      EDUCREC == 2 ~ "Some college/Associate's degree",
-      EDUCREC == 3 ~ "College Graduate",
-      EDUCREC == 4 ~ "Master's degree or higher",
-      EDUCREC == 99 ~ "No Answer"
-    )
-  )
+###RLS <- RLS |>
+  ###mutate(
+   ### highest_degree = case_when(
+     ### EDUCREC == 1 ~ "High school or less",
+     ### EDUCREC == 2 ~ "Some college/Associate's degree",
+     ###EDUCREC == 3 ~ "College Graduate",
+     ###EDUCREC == 4 ~ "Master's degree or higher",
+     ### EDUCREC == 99 ~ "No Answer"
+   ### )
+ ### )
 
-RLS <- RLS |>
-  mutate(
-    attendance_in_person = case_when(
-      ATTNDPERRLS == 1 ~ "More than once a week",
-      ATTNDPERRLS == 2 ~ "Once a week",
-      ATTNDPERRLS == 3 ~ "Once or twice a month",
-      ATTNDPERRLS == 4 ~ "A few times a year",
-      ATTNDPERRLS == 5 ~ "Seldom",
-      ATTNDPERRLS == 6 ~ "Never",
-      ATTNDPERRLS == 99 ~ "Don't know/Refused"
-    )
-  )
+###RLS <- RLS |>
+  ###mutate(
+   ### attendance_in_person = case_when(
+    ###  ATTNDPERRLS == 1 ~ "More than once a week",
+    ###  ATTNDPERRLS == 2 ~ "Once a week",
+    ###  ATTNDPERRLS == 3 ~ "Once or twice a month",
+    ###  ATTNDPERRLS == 4 ~ "A few times a year",
+     ### ATTNDPERRLS == 5 ~ "Seldom",
+     ### ATTNDPERRLS == 6 ~ "Never",
+     ### ATTNDPERRLS == 99 ~ "Don't know/Refused"
+    ###)
+ ### )
 
-RLS <- RLS |> 
-  mutate (
-    attendance_online = case_when(
-      ATTNDONRLS == 1 ~ "More than once a week",
-      ATTNDONRLS == 2 ~ "Once a week",
-      ATTNDONRLS == 3 ~ "Once or twice a month",
-      ATTNDONRLS == 4 ~ "A few times a year",
-      ATTNDONRLS == 5 ~ "Seldom",
-      ATTNDONRLS == 6 ~ "Never",
-      ATTNDONRLS == 99 ~ "Don't know/Refused"
-    )
-  )
+###RLS <- RLS |> 
+  ###mutate (
+    ###attendance_online = case_when(
+    ###  ATTNDONRLS == 1 ~ "More than once a week",
+    ###  ATTNDONRLS == 2 ~ "Once a week",
+    ###  ATTNDONRLS == 3 ~ "Once or twice a month",
+     ### ATTNDONRLS == 4 ~ "A few times a year",
+     ### ATTNDONRLS == 5 ~ "Seldom",
+     ### ATTNDONRLS == 6 ~ "Never",
+     ### ATTNDONRLS == 99 ~ "Don't know/Refused"
+    ###)
+  ###)
 
 ###RLS <- RLS |>
   ###mutate(
@@ -95,26 +95,26 @@ RLS <- RLS |>
       ###BIRTHDECADE == 6 ~ "1990s",
       ###BIRTHDECADE == 7 ~ "2000s",
       ###BIRTHDECADE == 99 ~ "No answer"
-    )
-  )
+    ###)
+  ###)
 
-RLS <- RLS |>
-  mutate(
-    total_family_income = case_when(
-      INC_SDT1 == 1 ~ "Less than $30,000",
-      INC_SDT1 == 2 ~ "$30,000 to less than $40,000",
-      INC_SDT1 == 3 ~ "$40,000 to less than $50,000",
-      INC_SDT1 == 4 ~ "$50,000 to less than $75,000",
-      INC_SDT1 == 5 ~ "$75,000 to less than $100,000",
-      INC_SDT1 == 6 ~ "$100,000 to less than $125,000",
-      INC_SDT1 == 7 ~ "$125,000 to less than $150,000",
-      INC_SDT1 == 8 ~ "$150,000 or more",
-      INC_SDT1 == 99 ~ "Don't know/Refused"
-    )
-  )
+###RLS <- RLS |>
+  ###mutate(
+    ###total_family_income = case_when(
+     ### INC_SDT1 == 1 ~ "Less than $30,000",
+     ### INC_SDT1 == 2 ~ "$30,000 to less than $40,000",
+     ### INC_SDT1 == 3 ~ "$40,000 to less than $50,000",
+     ### INC_SDT1 == 4 ~ "$50,000 to less than $75,000",
+      ###INC_SDT1 == 5 ~ "$75,000 to less than $100,000",
+     ### INC_SDT1 == 6 ~ "$100,000 to less than $125,000",
+     ### INC_SDT1 == 7 ~ "$125,000 to less than $150,000",
+     ### INC_SDT1 == 8 ~ "$150,000 or more",
+     ### INC_SDT1 == 99 ~ "Don't know/Refused"
+    ###)
+ ### )
 
 RLS_curated <- RLS |>
-  select(P_SUID, WEIGHT, highest_degree, attendance_in_person, attendance_online, birth_decade, total_family_income)
+  select(P_SUID, WEIGHT, EDUCREC, ATTNDPERRLS, ATTNDONRLS, BIRTHDECADE, INC_SDT1)
 
 RLS_curated |>
   summarise(
@@ -131,21 +131,73 @@ In this notebook, we are reverse engineering five sentences from the story.
 ### Sentence 1
 
 * **Sentence text**: ["Among very old Americans, the ones who are least likely to go to church are those who stopped at high school."]
-* **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
+* **Analysis summary**: [I was able to confirm this finding. Based on weighted percentages, around 35% of American adults who were born in the 1950s or earlier completed only a high school degree or less, more than any other answer. I also ran a test to see what the top attendance rates were within this specific demographic, and some of the top results are "seldom," and "never," and "a few times a year." These answers make up over 60% of the responses.]
 
 ```{r}
 # Put code to reverse engineer sentence here
-RLS_curated |>
-  filter(!is.na(highest_degree)) |>
-  group_by(highest_degree) |>
-  summarise(
-    n = n(),
-    unweighted_mean_degree = round(mean(n, na.rm = TRUE), 1),
-    weighted_mean_degree = round(weighted.mean(n, WEIGHT, na.rm = TRUE), 1),
-    .groups = "drop"
+RLS_curated_age <- RLS_curated |>
+  mutate(is_old = BIRTHDECADE < 3)
+
+RLS_curated_age_educ <- RLS_curated_age |>
+  filter(is_old == TRUE) |>
+  filter(EDUCREC == 1)
+
+RLS_curated_age_educ |>
+  group_by(attendance_in_person) |>
+  summarize (
+    count = n()
   ) |>
-  arrange(desc(weighted_mean_age))
+  arrange(desc(count))
+
+RLS_curated_age |>
+  summarise(
+    hs_weight = sum(WEIGHT[EDUCREC == 1]),
+    total_weight = sum(WEIGHT)
+  ) |>
+  mutate(hs_pct = hs_weight/total_weight * 100)
+
+RLS_curated_age |>
+  summarise(
+    somecol_weight = sum(WEIGHT[EDUCREC == 2]),
+    total_weight = sum(WEIGHT)
+  ) |>
+  mutate(somecol_pct = somecol_weight/total_weight * 100)
+
+RLS_curated_age |>
+  summarise(
+    col_weight = sum(WEIGHT[EDUCREC == 3]),
+    total_weight = sum(WEIGHT)
+  ) |>
+  mutate(col_pct = col_weight/total_weight * 100)
+
+RLS_curated_age |>
+  summarise(
+    masters_weight = sum(WEIGHT[EDUCREC == 4]),
+    total_weight = sum(WEIGHT)
+  ) |>
+  mutate(masters_pct = masters_weight/total_weight * 100)
+
+RLS_curated_age |>
+  summarise(
+    misc_weight = sum(WEIGHT[EDUCREC == 2]),
+    total_weight = sum(WEIGHT)
+  ) |>
+  mutate(misc_pct = misc_weight/total_weight * 100)
+
+
+
+  
+
+  
 # Display results of code below this codeblock
+
+Seldom	650			
+Once a week	648			
+Never	470			
+A few times a year	426			
+More than once a week	281			
+Once or twice a month	192			
+Dont know/Refused	37	
 
 ```
 
@@ -165,11 +217,19 @@ RLS_curated |>
 
 ### Sentence 3
 
-* **Sentence text**: [Paste in sentence to engineer here]
+* **Sentence text**: [Who is the most likely to show up on Sunday? It’s college-educated folks who make $50K–$100K per year.]
 * **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
 
 ```{r}
 # Put code to reverse engineer sentence here
+
+RLS_curated_inc <- RLS_curated |>
+  mutate (is_in_range = INC_SDT1 >= 4 & INC_SDT1 <= 5) |>
+  summarise(
+    range_weight = sum(WEIGHT[is_in_range == TRUE]),
+    total_weight = sum(WEIGHT)
+  ) |>
+  mutate(range_pct = range_weight / total_weight * 100)
 
 # Display results of code below this codeblock
 

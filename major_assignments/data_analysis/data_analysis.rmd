@@ -129,5 +129,18 @@ committee_parties <- clergy_wide |>
     arrange(desc(count))
 
 write.csv(committee_parties, "committee_parties.csv", row.names = FALSE)
-```
+
+committee_parties_clean <- read_csv("committee_parties_clean.csv")
+
+clergy_with_parties <- clergy_wide |>
+  inner_join(committee_parties_clean, join_by(committee_name))
+
+clergy_with_parties <- clergy_with_parties|>
+  mutate(total_contribs = sum(`2024` + `2022` + `2020` + `2018` + `2016`))
+
+clergy_with_parties |>
+  filter (party == "D") |>
+  summarize(
+    total = sum(total_contribs)
+  )
 
