@@ -63,7 +63,7 @@ clergy_totals_by_cycle <- clergy_contribs_combined |>
 
 Q2. Some clergy members have been more consistent donors across election cycles. Using the combined contribution data, create a dataframe that shows each contributor and how many different election cycles they contributed in (someone who gave in 2016, 2018, and 2024 would have 3 cycles). You can use group_by and summarize to do this. Who contributed in all five election cycles? How many people contributed in only one cycle vs. multiple cycles?
 
-A2. 
+A2. Looking at the data, only 32 donors contributed in all 5 election cycles. Of those, 25 made a "substantial" contribution to each election cycle (for our purposes, I'm considering a "substantial" donation to be $25 or more). Of every individual, Doris Cowan contributed the most money in a single cycle, contributing more than $46,000 in the 2024 election. I also went ahead and looked to see how many people only contributed to one election cycle. The breakdown is as follows: 456 people only contributed to the 2024 election, 152 people only contributed to the 2022 election, 549 people only contributed to the 2020 election, 76 people only contributed to the 2018 election, and 184 people only contributed to the 2016 election. I can't say these numbers surprise me, as the 2024 and 2020 election were easily the most competitive out of the 5 races. Out of sheer curiosity, I checked to see people who only contributed during midterms, and 4 contributors came up. 
 
 ```{r}
 clergy_wide <- clergy_totals_by_cycle |>
@@ -73,39 +73,127 @@ clergy_wide <- clergy_totals_by_cycle |>
     values_from = total_money,
     values_fill = 0
   )
+
+clergy_wide |>
+  filter(`2024` == 0, `2022` > 0, `2020` == 0, `2018` > 0, `2016` == 0)
+
 ```
 
 Q3. You're interested in whether there are geographic patterns in clergy giving. Using the combined contribution data, calculate the total amount contributed by clergy in each city (`contributor_city`). What are the top 5 cities by total contribution amount? Then calculate the number of unique contributors in each of those top 5 cities. Are the cities with the most money also the cities with the most contributors, or are there differences?
 
-A3. 
+A3. The top 5 cities by contribution amount are Baltimore, Silver Spring, Upper Marlboro, Bowie, and Severna Park. The top 5 cities by unique donors are Baltimore, Silver Spring, Towson, Bowie, and Ellicott City. Noticeably, Severna Park and Upper Marlboro are missing from this list. In fact, they're not even in the top 10. What this tells me is that there are individual donors from both cities that made large sums of donation, rather than a consistent stream of small donations. 
 
 ```{r}
+contributor_city <- clergy_contribs_combined |>
+  group_by(contributor_city) |>
+  summarise(total_amount = sum(contribution_receipt_amount)) |>
+  arrange(desc(total_amount))
+
+cities <- clergy_wide |>
+  inner_join(clergy_contribs_combined |> select(contributor_name, contributor_city),
+             join_by(contributor_name)
+             ) 
+  
+cities |>
+  group_by(contributor_city)|>
+  summarise(count = n()) |>
+  arrange(desc(count))
+  
 ```
 
 Q4. Use `pivot_wider` to create a summary showing each contributor and their total contributions in the 2020 and 2024 election cycles only (so create a dataframe with columns for contributor_name, total_2020, and total_2024). Then calculate a new column showing the change in contribution amount from 2020 to 2024. Which contributors increased their giving the most? Which decreased the most?
 
-A4. 
+A4. By far, Doris Cowan saw the biggest change in contributions, increasing her spending by more than $46,000 between 2024 and 2020. This is nearly $30,000 more than the second-highest contribution change. On the other side, John Price saw the biggest decrease in contributions, with an over-$17,000 decrease in 2024. 
 
 ```{r}
+
+clergy_2020_2024_elections <- clergy_totals_by_cycle |>
+  filter (two_year_transaction_period == "2020" | two_year_transaction_period == "2024")
+
+clergy_wider <- clergy_2020_2024_elections |>
+  select(contributor_name, two_year_transaction_period, total_money) |>
+  pivot_wider(
+    names_from = two_year_transaction_period,
+    values_from = total_money,
+    values_fill = 0
+  )
+
+clergy_wider <- clergy_wider |>
+  mutate(change = `2024` - `2020`)
+
 ```
 
 Q5. Now let's work with the United Methodist data. Join the `umdata_people` and `umdata_people_all` datasets using `GCFAId` as the key. Before joining, select only the unique columns from `umdata_people_all` (ConferenceId and ConferenceName) to avoid duplicate columns. After joining, filter for only clergy (not laity) and count them by conference and AccountStatus. Which conferences have the most clergy, and how do Active vs. Deceased clergy compare?
 
-A5.
+A5. I think something may be wrong with my dataset, because I only get Alabama-West Florida. I tried redoing it multiple times to see if there was an error on my end, but unless I'm wrong, it looks like that conference has the most clergy. There are also more clergy who are inactive than active in this dataset. In fact, only 81 more clergymen are inactive than active, as there are 486 who are inactive and 407 who are active. Most inactive clergymen are retired, but 155 are deceased, and 107 are inactive for other unspecified reasons. 
 
 ```{r}
+people_matched <- umdata_people |>
+  inner_join(
+    umdata_people_all |> select(GCFAId, ConferenceId, ConferenceName),
+    join_by(GCFAId)
+  )
+
+clergy_data <- people_matched |>
+  filter(ClergyOrLay == "Clergy")
+
+clergy_data |>
+  group_by(ConferenceName) |>
+  summarise(
+    count = n()
+  ) |>
+  arrange(desc(count))
+
+clergy_data |>
+  group_by(AccountStatus) |>
+  summarise(
+    count = n()
+  ) |>
+  arrange(desc(count))
 ```
+
 
 Q6. You want to explore whether there's any overlap between clergy who made political contributions and clergy in the United Methodist database. Using the combined contribution data and the UM data, identify any contributors whose names (first and last name) match clergy in the `umdata_people` file. How many matches do you find? What challenges does this kind of name-based matching present? Are there ways to improve the accuracy of matching?
 
-A6. 
+A6. From my findings, I was able to pick out three names --- William Calhoun, John Johnson, and Richard Wright. The huge issue with trying to find matches was that the names were in completely different formats, and required some coding to get them both to the same style. Otherwise, the inner join would not work. As far as I know, there's no other way to improve the accuracy of the matching, other than ensuring that the names are the same case and are formatted the same across both datasets. 
 
 ```{r}
+clergy_data <- clergy_data |>
+  mutate(name = paste(`FirstName`, `LastName`)) |>
+  mutate(full_name = str_to_upper(name))
+
+clergy_contribs_combined <- clergy_contribs_combined |>
+  mutate(full_name = paste(`contributor_first_name`, `contributor_last_name`))
+
+matches <- clergy_data |>
+  inner_join (
+    clergy_contribs_combined, join_by(full_name)
+  )
 ```
 
 Q7. Choose your own adventure: Come up with a question that requires you to use at least one join and one aggregation (sum, mean, count, etc.) using either the clergy contribution data, the UM data, or both. Write the question, then write the code to answer it, and provide an answer.
 
-A7: 
+A7: Question: out of the donors from the UM database who also contributed to election cycles, what year were the most donations made?
+
+Answer: the most contributions were made in 2020, with a total of 22. Following that, 13 were made in 2022 and 5 were made in 2024. 
 
 ```{r}
+clergy_data <- clergy_data |>
+  mutate(name = paste(`FirstName`, `LastName`)) |>
+  mutate(full_name = str_to_upper(name))
+
+clergy_contribs_combined <- clergy_contribs_combined |>
+  mutate(full_name = paste(`contributor_first_name`, `contributor_last_name`))
+
+matches <- clergy_data |>
+  inner_join (
+    clergy_contribs_combined, join_by(full_name)
+  )
+
+matches |>
+  group_by(two_year_transaction_period) |>
+  summarise(
+    count = n()
+  ) |>
+  arrange(desc(count))
 ```
