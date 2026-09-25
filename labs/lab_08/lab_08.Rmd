@@ -21,6 +21,7 @@ options(scipen=999)
 library(tidyverse)
 library(janitor)
 library(tidycensus)
+library(lubridate)
 ```
 
 ## Load and modify data
@@ -81,9 +82,26 @@ top_10 |>
 
 Describe the pattern of results; are there particular months that stand out? What might explain the pattern you see?
 
-**A2.**
+**A2.** I noticed a huge spike towards the end of 2024. This is hardly surprising, given the proximity to the 2024 election. However, I am curious about the spike towards mid-2024. My assumption is that it was close to the primaries. That seems a bit strange to me though, as the Democrats didn't even run a primary and the Republicam choice seemed pretty clear-cut. 
 
 ```{r}
+
+clergy_contribs_2024 <- clergy_contribs_2024 |>
+  mutate(month = floor_date(contribution_receipt_date, "month")) |>
+  group_by(month) |>
+  mutate(total_month = sum(contribution_receipt_amount))
+
+clergy_contribs_2024 |>
+  ggplot() +
+  geom_line(aes(x=month, y=total_month)) +
+  geom_point(aes(x=month, y=total_month)) +
+  theme_minimal() +
+  labs(
+    title="Contribution amounts from clergymen skyrocketed in recent months",
+    x = "month",
+    y = "total contribution amount",
+    caption = "source: Federal Election Commission"
+  )
 ```
 
 **Q3.** A scatterplot is a type of chart that helps us see relationships between two variables. One variable goes on the x axis, the other on the y axis. For each row/observation in our data, a scatterplot puts a circle (or a "point") where the two variables intersect on a grid.
@@ -108,9 +126,28 @@ To answer this question, do the following:
 6.  Add a label for each point that shows the county name using geom_text() - see some examples of its use at <https://ggplot2.tidyverse.org/reference/geom_text.html#ref-examples>. Try to make the names as easy to read as possible by avoiding overlap.
 7.  In the answer space below, describe what you see and answer the questions posed above. In a general sense, what do you think this means? Feel free to consider the actual raw values: how would you report out the main point(s) of this chart?
 
-**A3.**
+**A3.** This data has no correlation. To me, this tells me that there is no link between a person's wealth and how religious a county is. In fact, I don't even know if this is report-able. ONe of the lessons I remember from 405 is that sometimes there isn't a story from data. I think this is one of those cases. 
 
 ```{r}
+md <- get_acs(geography = "county",
+              variables = c(medincome = "B19013_001"),
+              state = "MD",
+              year = 2020)
+
+md_census_2024 <- md |>
+  inner_join(usreligioncensus_county_2020.csc, join_by (GEOID == FIPS))
+
+md_census_2024 |>
+  ggplot() +
+  geom_point(aes(x=estimate, y=`Adherents as % of Population`)) +
+  geom_smooth(aes(x=estimate, y=`Adherents as % of Population`), method="lm", se=FALSE) +
+  theme_minimal() +
+  labs(
+    title="Do more religious counties have a higher income?",
+    x = "Median income",
+    y = "Adherents as % of population",
+    caption = "source: U.S. Religion Census, 2020"
+  )
 ```
 
 **Q4.** A histogram is similar to a bar chart, but instead of showing counts for categories, it shows the **distribution** of a continuous variable. It does this by dividing the data into "bins" — equal-sized ranges — and showing how many observations fall into each bin. This is useful for seeing the shape of your data: is it clustered around one value? Is it spread out? Does it have a long tail?
@@ -125,7 +162,11 @@ Using the megachurches data, create a histogram showing the distribution of chur
 
 In the answer space below, describe the shape of the distribution. Where do most megachurches cluster? Are there outliers? What does this tell you about what "megachurch" means in practice?
 
-**A4.**
+**A4.** The data is heavily skewed to the left, and cluster around the 1,000-10,000 range. However, extreme outliers make this data spread much wider than necessary, specifically the 85,000 life church attendees. In practice, a "megachurch" is most likely a church with more than 1,000 attendees, but there is clearly no upper limit. 
 
 ```{r}
+megachurches |>
+  ggplot(aes(x = size)) +
+  geom_histogram(binwidth = 2000, fill = "blue", color = "black") +
+  labs(title = "Megachurches are big. But how many people go to them?", x = "Size", y = "# of megachurches")
 ```
