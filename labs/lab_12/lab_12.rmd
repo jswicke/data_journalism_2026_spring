@@ -248,7 +248,7 @@ A few things worth following up on once the data is mapped:
 - Which neighborhoods or municipalities have the highest density of churches per capita? (You'd join to ACS population data via `tidycensus` to answer that.)
 - Are there ZIP codes or census tracts in PG County with no churches in our dataset at all? That could indicate either a real gap or an undercount in the student collection effort.
 
-ANSWER HERE
+A couple addresses failed to geocode, most likely due to typos or data that was incorrectly inputted. Some churches may not have a clear address, or their address is null because it changed in recent years, and the address provided is outdated. Denominations for the most part are pretty clustered. Seventh-day adventist churches are all pretty close to each other, as are American baptist churches. The furthest spread was non-denominational churches, though that makes sense, as it is not a denomination in the same way others are. East Riverdale seems to be the central point for the highest density of churches in Prince George's County, with everything around it gradually having less density the further you get from it. It seems that the Jewish population is completely underrepresented in this dataset, which is entirely my fault. Otherwise, I'd say everything seems pretty represented compared to the census data. 
 
 ## A note on the geocoder
 
