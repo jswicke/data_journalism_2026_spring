@@ -86,9 +86,54 @@ Here's the process to follow (similar to what you did in pre_lab_10):
 
 What's the story about church density in an urban jurisdiction (Baltimore City) vs. a suburban one (Montgomery County)? Where are the clusters, and what might explain the differences?
 
-**A2.**
+**A2.** In Baltimore city, churches seem more widespread, but not necessarily concentrated. This contrasts with Montgomery county, where churches are found almost exclusively in the Southeast region. INteresting to note is that this region borders Washington, D.C. From these findings, it's safe to assume that churches are more widespread in urban areas of Maryland. This makes sense, as there are generally a higher concentration of people in these areas. 
 
 ```{r}
+churches_md <- read_csv("data/churches_md.csv")
+md_statewide_county <- read_csv("data/md_statewide_county.csv")
+
+md_counties <- counties |>
+  filter(STATEFP == "24")
+
+md_zips <- st_read("data/md_zips/BNDY_ZIPCodes11Digit_MDP.shp")
+
+moco <- md_counties |>
+  filter(NAME == "Montgomery") |>
+  st_transform(crs = st_crs(md_zips))
+
+moco_zips <- st_join(md_zips, moco, join = st_intersects) |>
+  filter(!is.na(NAME))
+
+baltimore_city <- md_counties |>
+  filter(NAMELSAD == "Baltimore city") |>
+  st_transform(crs = st_crs(md_zips))
+
+bmore_zips <- st_join(md_zips, baltimore_city, join = st_intersects) |>
+  filter(!is.na(NAME))
+
+moco_bmore_zips <- bind_rows(moco_zips, bmore_zips)
+
+moco_churches <- churches_md |>
+  mutate(zip5 = as.character(zip5)) |>
+  filter(zip5 %in% moco_zips$ZIPCODE1)
+
+bmore_churches <- churches_md |>
+  mutate(zip5 = as.character(zip5)) |>
+  filter(zip5 %in% bmore_zips$ZIPCODE1)
+
+moco_bmore_churches <- bind_rows(moco_churches, bmore_churches)
+
+moco_bmore_church_counts <- moco_bmore_churches |>
+  group_by(zip5) |>
+  summarise(church_count = n())
+
+moco_bmore_churches_sf <- moco_bmore_zips |>
+  left_join(moco_bmore_church_counts, by = c("ZIPCODE1" = "zip5"))
+
+ggplot() +
+  geom_sf(data=moco_bmore_churches_sf, aes(fill = `church_count`)) +
+  scale_fill_viridis_b(option="magma") +
+  theme_minimal()
 ```
 
 **Q3.** Is there a relationship between religious adherence and political voting patterns? Using the `md_statewide_county.csv` file in the data folder (which has 2022 gubernatorial election results), use the percentage of the vote won by Dan Cox (the Republican candidate) in each county. Then join that to the religion data from Q1, which should already have the congregations per 10,000 rate and the adherent percentage.
@@ -97,9 +142,27 @@ Make a county-level choropleth map of the Cox vote percentage AND a second map o
 
 HINT: The election data has a GEOID column and the religion data has a FIPS column -- these should match.
 
-**A3.**
+**A3.** Yes, it is safe to say that more Republican-leaning counties tend to have more religious congregations. The immediate culprit is Garrett county, which has a high concentration of both religious congregations and Cox voters. Other noteworthy counties are Allegany county and Somerset county, both which have high percentages of both congregations and Cox voters. The exceptions to these are Prince George's County and Baltimore city, both which have some of the highest numbers of congregations and lowest percentage of Cox voters. This can be explained by the high volume of communities of color in these counties, who have high religious adherence and majority Democrat-leaning views. 
 
 ```{r}
+
+md_statewide_county <- md_statewide_county |>
+  mutate(GEOID = as.character(GEOID))
+
+md_statewide_county_with_religion <- md_pop_with_religion |>
+  left_join(md_statewide_county, join_by(`GEOID`))
+
+md_statewide_county_with_religion |>
+  ggplot() +
+  geom_sf(data=md_statewide_county_with_religion, aes(fill = `rate`)) +
+  scale_fill_viridis_b(option="magma") +
+  theme_minimal()
+
+ggplot() +
+  geom_sf(data=md_statewide_county_with_religion, aes(fill = `PctCox`)) +
+  scale_fill_viridis_b(option="magma") +
+  theme_minimal()
+
 ```
 
 **Q4.** You've been assigned a story about the relationship between demographics and religious life in Maryland. Use tidycensus to retrieve a demographic variable of your choice at the county level for Maryland with geometry -- for example, percent of the population that is Black (B02001_003 divided by B01001_001), median age (B01002_001), or percent with a bachelor's degree (B15003_022 divided by B15003_001). You can pick any variable you think would be interesting.
@@ -108,7 +171,38 @@ Join that demographic data to the religion data from Q1 (or reload it). Make a c
 
 What geographic patterns do you see? Do any counties stand out as having an unexpected combination of high/low demographics and high/low religious adherence? What would your next reporting steps be?
 
-**A4.**
+**A4.** A pattern I see is that counties with higher religious rates tend to have lower percentages for a bachelor's degree. Counties on the northeastern end of Maryland tend to have lower rates of bachelor's degrees, despite having higher rates of religious congregations. Howeverm the exception to this is Howard county. Despite having the highest percentage of the population with bachelor's degrees, they are in the higher tier of religious adherents. In part, this may have to do with Howard county being one of the wealthiest counties in the state, if not the entire country.
 
 ```{r}
+bachelors <- get_acs (geography = "county", variables = "B15003_022", state = "MD", year = 2024)|>
+  arrange(desc(estimate))
+
+bachelors_2 <- get_acs (geography = "county", variables = "B15003_001", state = "MD", year = 2024)|>
+  arrange(desc(estimate)) 
+
+bachelors_2 <- bachelors_2 |>
+  rename(estimate_2 = estimate)
+
+bachelor_pct <- bachelors |>
+  select(GEOID, estimate) |>
+  inner_join(bachelors_2, join_by(GEOID))
+
+bachelor_pct <- bachelor_pct |>
+  mutate(percent = estimate/estimate_2)
+
+md_pop_with_bachelors <- md_pop_with_religion |>
+  left_join(bachelor_pct, join_by(`GEOID`))
+
+
+ggplot() +
+  geom_sf(data=md_pop_with_bachelors, aes(fill = `rate`)) +
+  scale_fill_viridis_b(option="magma") +
+  theme_minimal()
+
+ggplot() +
+  geom_sf(data=md_pop_with_bachelors, aes(fill = `percent`)) +
+  scale_fill_viridis_b(option="magma") +
+  theme_minimal()
+
+
 ```
