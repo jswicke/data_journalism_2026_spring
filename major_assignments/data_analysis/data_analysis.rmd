@@ -18,6 +18,10 @@ library(lubridate)
 library(refinr)
 library(tidycensus)
 library(janitor)
+library(tigris)
+library(sf)
+library(stringr)
+library(ggthemes)
 ```
 ***data cleaning***
 ```{r}
@@ -64,12 +68,123 @@ clergy_long <- clergy_wide |>
 
 ***This dataset has around 42,000 objects with 15 variables (14 excluding the cleaned data row). Right now, the clear and obvious flaw is the inconsistency with the zip codes. Some are 5 digits while others are 9. For my sake, I'd like them all to be consistent. I know there's a way to do this, but I have to look back to see how. Another rather annoying limitation is that it doesn't show what political party the contribution is for. Since I'm doing an analysis of Democrat/Republican donors, it will be very tedious to have to individually check what each PAC represents. Some will be easy, some will take some research. Some of my questions will also need slight reframing. Obviously, this dataset does not include the exact reason each clergy contributed, so asking why top donors contributed will likely have to be changed to a comparison of top donors throughout election cycles. My question about Sherrod Brown will likely have to be reframed similarly, with me looking at contributions to his PAC over past election cycles, and maybe comparing it to other out-of-state committees. Other than that, I don't anticipate having any trouble answering my questions, and I believe that the data encompasses everything I'm looking for.***
 
+
+***Question 1: How do contributions break down by zip code in Baltimore County during the 2024 election? Are they all concentrated or are there exceptions? How does this compare to zip codes across the state?***
+
+***Answer: The first and immediate issue is that there are 6,395 contributions in zip code 21239, which makes up Northwood. Upon examination, it's clear that Doris Cowan is responsible for this. Examining this data will reveal an exorbitant amount of donations from her, more than any other contributor across every election cycle. For our purposes, I've created an "anti-Doris" map. Using this map, the highest concentration of contributions ***
+
+```{r}
+baltimore_zips <- st_read("baltimore_zips/ZIPCODE.shp")
+
+baltimore_clean_2024 <- clergy_contribs_combined_clean |>
+  filter(two_year_transaction_period == "2024") |>
+  filter(contributor_city == "BALTIMORE") |>
+  select (contributor_name_clean, contribution_receipt_amount, contributor_city, zip5)
+
+baltimore_contrib_count <- baltimore_clean_2024 |>
+  group_by(zip5) |>
+  summarise(contrib_count = n()) %>% 
+  select(zip5, contrib_count)
+
+baltimore_contribs_sf <- baltimore_zips |> 
+  left_join(baltimore_contrib_count, join_by("ZIPCODE1" == "zip5")) %>% 
+  mutate(contrib_count = if_else(is.na(contrib_count), 0, contrib_count))
+
+
+baltimore_contribs_sf_no_doris <- baltimore_contribs_sf %>% 
+  filter(ZIPCODE1 != '21239')
+
+ggplot() +
+  geom_sf(data = baltimore_zips) +
+  geom_sf(data = baltimore_contribs_sf_no_doris, aes(fill = contrib_count)) +
+  scale_fill_viridis_b(option="magma", trans = "log") +
+  theme_minimal() +
+  labs(title = "How many Baltimore clergy members contributed to the\n2024 election by zip code?",
+       fill = "Number of \nContributions")
+  
+  
+
+```
+```{r}
+md_zips <- st_read("md_zips/BNDY_ZIPCodes11Digit_MDP.shp")
+
+contribs_with_zips <- md_zips |>
+  left_join(clergy_wide, join_by(ZIPCODE1 == zip5)) 
+  
+contribs_with_zips <- contribs_with_zips |>
+  select(contributor_name, contributor_city, ZIPCODE1)
+
+md_contrib_count <- contribs_with_zips|>
+  group_by(ZIPCODE1) |>
+  summarise(contrib_count = n()) |> 
+  select(ZIPCODE1, contrib_count) |>
+  st_drop_geometry(md_contrib_count)
+
+md_contribs_sf <- contribs_with_zips |>
+  left_join(md_contrib_count, join_by(ZIPCODE1)) %>%
+  mutate(contrib_count = if_else(is.na(contrib_count), 0, contrib_count))
+
+md_contribs_sf_no_baltimore <- md_contribs_sf |>
+  filter(
+    ZIPCODE1 != "21201" & ZIPCODE1 != "21202" & ZIPCODE1 != "21205" & ZIPCODE1 != "21206" & ZIPCODE1 != "21207" & ZIPCODE1 != "21208" & ZIPCODE1 != "21209" & ZIPCODE1 != "21210" & ZIPCODE1 != "21211"& ZIPCODE1 != "21212" & ZIPCODE1 != "21213" & ZIPCODE1 != "21214" & ZIPCODE1 != "21215" & ZIPCODE1 != "21216" & ZIPCODE1 != "21217" & ZIPCODE1 != "21218" & ZIPCODE1 != "21222" & ZIPCODE1 != "21224" & ZIPCODE1 != "21225" & ZIPCODE1 != "21226" & ZIPCODE1 != "21227" & ZIPCODE1 != "21228" & ZIPCODE1 != "21229" & ZIPCODE1 != "21230" & ZIPCODE1 != "21231" & ZIPCODE1 != "21234" & ZIPCODE1 != "21236" & ZIPCODE1 != "21237" & ZIPCODE1 != "21239" & ZIPCODE1 != "21251" & ZIPCODE1 != "21287" & ZIPCODE1 != "21203" & ZIPCODE1 != "21233" & ZIPCODE1 != "21263" & ZIPCODE1 != "21264" & ZIPCODE1 != "21265" & ZIPCODE1 != "21270" & ZIPCODE1 != "21273" & ZIPCODE1 != "21274" & ZIPCODE1 != "21275" & ZIPCODE1 != "21278" & ZIPCODE1 != "21279" & ZIPCODE1 != "21280" & ZIPCODE1 != "21281" & ZIPCODE1 != "21283" & ZIPCODE1 != "21283" & ZIPCODE1 != "21288" & ZIPCODE1 != "21290" & ZIPCODE1 != "21297" & ZIPCODE1 != "21298")
+
+ggplot() +
+  geom_sf(data = md_zips) +
+  geom_sf(data = md_contribs_sf_no_baltimore, aes(fill = contrib_count)) +
+  scale_fill_viridis_b(option="magma", trans = "log") +
+  theme_minimal() +
+  labs(title = "Statewide Contributions by Zip Code\n(Excluding Baltimore)",
+       fill = "Number of \nContributions")
+
+```
+
+***Question 2: Did Sherrod Brown get an abnormal amount of donations compared to other out-of-state candidates?***
+
+***Answer 2:***
+
+```{r}
+clergy_long |>
+  filter(committee_name == "FRIENDS OF SHERROD BROWN") |>
+  group_by(committee_name) |>
+  summarise(
+    count = n(),
+    total_amount = sum(total_contributions)
+  )
+
+oos_parties <- read_csv("committee_parties_with_oos.csv")
+
+oos_clergy <- clergy_wide |>
+  inner_join(oos_parties, join_by(committee_name))
+
+oos_clergy <- oos_clergy|>
+  mutate(total_contribs = sum(`2024` + `2022` + `2020` + `2018` + `2016`))
+
+oos_clergy |>
+  filter(oos_candidate == "Y") |>
+  group_by(committee_name) |>
+  summarise(
+    count = n(),
+    total_amount = sum(total_contribs),
+  ) |>
+  arrange(desc(total_amount))
+
+md_contribs |>
+  summarise(
+    mean_contrib = mean(transaction_amount),
+    median_contrib = median(transaction_amount)
+  )
+
+
+```
+
+
+
 ***Question 3: What cities in Maryland contributed the most amount of money to elections in 2024? How did they compare to previous election cycles?***
 
 ***Answer 3:**
 ```{r}
 
-clergy_contribs_combined_clean |>
+maryland_cities_2024 <- clergy_contribs_combined_clean |>
   group_by(contributor_city) |>
   filter (two_year_transaction_period == "2024") |>
   summarize(
@@ -114,6 +229,24 @@ clergy_contribs_combined_clean |>
   )|>
   arrange(desc(total_amount))
 
+
+```
+
+***data visualization***
+```{r}
+top_10_cities <- head(maryland_cities_2024, 10)
+
+top_10_cities |>
+  ggplot ()+
+  geom_bar(aes(x=reorder(contributor_city, total_amount), weight=total_amount)) +
+  coord_flip() +
+  theme_solarized() +
+  labs(
+    title="What cities produce the ",
+    x = "City",
+    y = "Total contributions",
+    caption = "source: U.S. Religion Census, 2020"
+  )
 ```
 
 ***Question 5: Did Democrats or Republicans make more money from churches across all 5 election cycles? How does this compare to state-level contributions?***
@@ -139,8 +272,27 @@ clergy_with_parties <- clergy_with_parties|>
   mutate(total_contribs = sum(`2024` + `2022` + `2020` + `2018` + `2016`))
 
 clergy_with_parties |>
-  filter (party == "D") |>
+  group_by(party) |>
   summarize(
-    total = sum(total_contribs)
-  )
+    count = n(),
+    total_money = sum(total_contribs)
+  ) |>
+  arrange(desc(count))
 
+```
+
+```{r}
+md_contribs <- md_contribs |>
+  mutate(full_name = paste(contributor_last_name, contributor_first_name, sep=", "))
+
+clergy_state_level_contribs <- clergy_with_parties |>
+  inner_join(md_contribs, join_by(contributor_name == full_name))
+
+clergy_state_level_contribs |>
+  group_by(party) |>
+  summarize(
+    count = n(),
+    total_money = sum(total_contribs)
+  ) |>
+  arrange(desc(count))
+```
